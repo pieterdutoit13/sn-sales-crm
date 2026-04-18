@@ -224,7 +224,11 @@ Return ONLY valid JSON:
         })
       });
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
+     const rawText = data.content.map(b => b.text || "").join("");
+const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+if (!jsonMatch) throw new Error("No JSON found in response");
+const parsed = JSON.parse(jsonMatch[0]);
+if (!parsed) throw new Error("Empty response");
       const rawText = data.content.map(b => b.text || "").join("");
       const jsonMatch = rawText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("No JSON found in response");
