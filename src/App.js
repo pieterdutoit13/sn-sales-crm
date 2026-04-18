@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import logo from "./logo.png";
 
@@ -14,7 +14,7 @@ const KEYWORDS = [
   "Escalation Needed",
 ];
 
-// ── Smith+Nephew Brand Colours ─────────────────────────────────────────────
+// â”€â”€ Smith+Nephew Brand Colours â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const C = {
   orange:      "#F4821F",
   orangeLight: "#FEF0E3",
@@ -48,7 +48,7 @@ const KW = {
   "Escalation Needed":        { bg: C.purpleLight, border: C.purple, text: C.purple },
 };
 
-// ── Shared styles ──────────────────────────────────────────────────────────
+// â”€â”€ Shared styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const inputSt = {
   width: "100%", background: C.white, border: `1.5px solid ${C.border}`,
   borderRadius: 8, padding: "11px 14px", color: C.text, fontSize: 14,
@@ -120,7 +120,7 @@ function Header({ user, isAdmin, onSignOut }) {
   );
 }
 
-// ── LOGIN ──────────────────────────────────────────────────────────────────
+// â”€â”€ LOGIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function LoginScreen({ onLogin }) {
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
@@ -130,7 +130,7 @@ function LoginScreen({ onLogin }) {
 
   async function handle() {
     if (!email || !password) { setError("Please enter your email and password."); return; }
-    if (!supabase) { setError("App not configured yet — see setup instructions."); return; }
+    if (!supabase) { setError("App not configured yet â€” see setup instructions."); return; }
     setLoading(true); setError("");
     const { data, error: err } = mode === "login"
       ? await supabase.auth.signInWithPassword({ email, password })
@@ -148,7 +148,7 @@ function LoginScreen({ onLogin }) {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, marginBottom: 28 }}>
           <img src={logo} alt="Smith+Nephew" style={{ height: 52, objectFit: "contain" }} />
           <div style={{ width: 40, height: 2, background: C.orange, borderRadius: 2 }} />
-          <div style={{ fontWeight: 700, fontSize: 15, color: C.navy }}>Sales CRM — Netherlands</div>
+          <div style={{ fontWeight: 700, fontSize: 15, color: C.navy }}>Sales CRM â€” Netherlands</div>
           <div style={{ fontSize: 12, color: C.textMuted }}>{mode === "login" ? "Sign in to your account" : "Create your account"}</div>
         </div>
 
@@ -160,7 +160,7 @@ function LoginScreen({ onLogin }) {
           </div>
           <div>
             <label style={labelSt}>Password</label>
-            <input style={inputSt} type="password" placeholder="••••••••" value={password}
+            <input style={inputSt} type="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" value={password}
               onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} />
           </div>
 
@@ -179,45 +179,18 @@ function LoginScreen({ onLogin }) {
           </div>
         </div>
       </div>
-      <div style={{ marginTop: 24, fontSize: 11, color: C.textMuted }}>© Smith+Nephew · Confidential</div>
+      <div style={{ marginTop: 24, fontSize: 11, color: C.textMuted }}>Â© Smith+Nephew Â· Confidential</div>
     </div>
   );
 }
 
-// ── RECORD TAB ─────────────────────────────────────────────────────────────
+// â”€â”€ RECORD TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function RecordTab({ user, onSave }) {
-  const [recording, setRecording]   = useState(false);
   const [transcript, setTranscript] = useState("");
   const [processing, setProcessing] = useState(false);
   const [extracted, setExtracted]   = useState(null);
   const [step, setStep]             = useState("idle");
-  const [seconds, setSeconds]       = useState(0);
-  const [recError, setRecError]     = useState("");
-  const mediaRef  = useRef(null);
-  const chunksRef = useRef([]);
-  const timerRef  = useRef(null);
-  const repName   = user?.email?.split("@")[0] || "Unknown";
-
-  useEffect(() => {
-    if (recording) timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
-    else { clearInterval(timerRef.current); setSeconds(0); }
-    return () => clearInterval(timerRef.current);
-  }, [recording]);
-
-  async function startRec() {
-    setRecError("");
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mime   = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg", "audio/mp4", ""].find(m => m === "" || MediaRecorder.isTypeSupported(m));
-      const mr     = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-      mediaRef.current = mr; chunksRef.current = [];
-      mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      mr.onstop = () => { stream.getTracks().forEach(t => t.stop()); setStep("recorded"); };
-      mr.start(250); setRecording(true);
-    } catch { setRecError("Microphone access denied — please type your note below instead."); }
-  }
-
-  function stopRec() { mediaRef.current?.stop(); setRecording(false); }
+  const repName = user?.email?.split("@")[0] || "Unknown";
 
   async function extract() {
     if (!transcript.trim()) { alert("Please enter your call notes first."); return; }
@@ -280,14 +253,12 @@ Return ONLY valid JSON:
     setExtracted(null); setTranscript(""); setStep("idle");
   }
 
-  const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
       {/* Rep info bar */}
       <div style={{ ...cardSt, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px" }}>
-        <div style={{ width: 36, height: 36, borderRadius: "50%", background: C.orangeLight, border: `2px solid ${C.orange}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>👤</div>
+        <div style={{ width: 36, height: 36, borderRadius: "50%", background: C.orangeLight, border: `2px solid ${C.orange}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>ðŸ‘¤</div>
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{repName}</div>
           <div style={{ fontSize: 11, color: C.textMuted }}>{user?.email}</div>
@@ -295,47 +266,60 @@ Return ONLY valid JSON:
         <div style={{ marginLeft: "auto", fontSize: 11, color: C.textMuted }}>{new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</div>
       </div>
 
-      {/* Mic */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "16px 0" }}>
-        <div onClick={recording ? stopRec : startRec} style={{
-          width: 76, height: 76, borderRadius: "50%",
-          background: recording ? C.red : C.orange,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer", fontSize: 28,
-          boxShadow: recording ? `0 0 0 12px ${C.redLight}` : `0 4px 20px rgba(244,130,31,0.4)`,
-          transition: "all 0.3s",
-        }}>
-          {recording ? "⏹" : "🎙"}
+      {/* How to dictate instruction card */}
+      <div style={{ background: C.navyLight, border: `1px solid ${C.navy}22`, borderRadius: 12, padding: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.navy, marginBottom: 10 }}>ðŸŽ™ How to log a call</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[
+            ["1", "Tap the notes box below"],
+            ["2", "Tap the ðŸŽ¤ mic icon on your phone keyboard"],
+            ["3", "Speak your call notes naturally"],
+            ["4", "Tap the keyboard mic again to stop"],
+            ["5", "Tap Extract CRM Data"],
+          ].map(([n, text]) => (
+            <div key={n} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 22, height: 22, borderRadius: "50%", background: C.orange, color: C.white, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{n}</div>
+              <div style={{ fontSize: 13, color: C.navy }}>{text}</div>
+            </div>
+          ))}
         </div>
-        {recording && <div style={{ color: C.red, fontWeight: 800, letterSpacing: 2, fontSize: 13 }}>REC {fmt(seconds)}</div>}
-        {!recording && step === "idle"     && <div style={{ color: C.textMuted, fontSize: 12 }}>Tap to record your call notes</div>}
-        {!recording && step === "recorded" && <div style={{ color: C.green, fontSize: 12, fontWeight: 600 }}>✓ Recording complete — add any extra notes below</div>}
-        {recError && <div style={{ color: C.red, fontSize: 12, textAlign: "center", maxWidth: 280, background: C.redLight, padding: "8px 12px", borderRadius: 8 }}>{recError}</div>}
       </div>
 
       {/* Text input */}
       <div>
-        <label style={labelSt}>Call Notes</label>
-        <textarea style={{ ...inputSt, minHeight: 120, resize: "vertical", lineHeight: 1.65 }}
-          placeholder={"Type or dictate your call notes here.\n\nE.g. \"Visited Dr. Van der Berg at Amsterdam UMC today. Discussed the JOURNEY II knee system. He is very interested in switching from competitor. Needs a cadaver lab session first. Follow up next week to arrange.\""}
-          value={transcript} onChange={e => setTranscript(e.target.value)} />
+        <label style={labelSt}>Call Notes â€” tap here then use keyboard mic ðŸŽ¤</label>
+        <textarea
+          style={{ ...inputSt, minHeight: 140, resize: "vertical", lineHeight: 1.65, fontSize: 15 }}
+          placeholder={"Tap the mic ðŸŽ¤ on your keyboard and speak, or type here.\n\nE.g. \"Visited Dr. Van der Berg at Amsterdam UMC today. Discussed the JOURNEY II knee system. Very interested but needs cadaver lab session. Follow up next week.\""}
+          value={transcript}
+          onChange={e => setTranscript(e.target.value)}
+        />
+        {transcript.length > 0 && (
+          <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4, textAlign: "right" }}>{transcript.length} characters</div>
+        )}
       </div>
 
       {step !== "extracted" && (
         <button onClick={extract} disabled={processing || !transcript.trim()} style={btnOrange(processing || !transcript.trim())}>
-          {processing ? "⏳ Extracting with AI..." : "✨ Extract CRM Data"}
+          {processing ? "â³ Extracting with AI..." : "âœ¨ Extract CRM Data"}
         </button>
+      )}
+
+      {!transcript && (
+        <div style={{ textAlign: "center", padding: "8px 0" }}>
+          <div style={{ fontSize: 11, color: C.textMuted }}>Or type your notes manually if preferred</div>
+        </div>
       )}
 
       {step === "extracted" && extracted && (
         <div style={{ ...cardSt, display: "flex", flexDirection: "column", gap: 16, border: `1.5px solid ${C.orange}` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.orange }} />
-            <div style={{ color: C.orange, fontWeight: 700, fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase" }}>AI Extracted Data — Please Review</div>
+            <div style={{ color: C.orange, fontWeight: 700, fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase" }}>AI Extracted Data â€” Please Review</div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            {[["Date", extracted.date], ["Sales Rep", extracted.salesRep], ["Surgeon", extracted.surgeonName], ["Hospital", extracted.hospital || "—"], ["Product Line", extracted.productLine || "—"], ["Sentiment", extracted.sentiment]].map(([k, v]) => (
+            {[["Date", extracted.date], ["Sales Rep", extracted.salesRep], ["Surgeon", extracted.surgeonName], ["Hospital", extracted.hospital || "â€”"], ["Product Line", extracted.productLine || "â€”"], ["Sentiment", extracted.sentiment]].map(([k, v]) => (
               <div key={k}>
                 <div style={microSt}>{k}</div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{v}</div>
@@ -352,7 +336,7 @@ Return ONLY valid JSON:
             <div>
               <div style={microSt}>Key Follow-ups</div>
               {extracted.keyFollowups.map((f, i) => (
-                <div key={i} style={{ fontSize: 13, color: C.text, borderLeft: `3px solid ${C.orange}`, paddingLeft: 10, marginBottom: 5, lineHeight: 1.5 }}>→ {f}</div>
+                <div key={i} style={{ fontSize: 13, color: C.text, borderLeft: `3px solid ${C.orange}`, paddingLeft: 10, marginBottom: 5, lineHeight: 1.5 }}>â†’ {f}</div>
               ))}
             </div>
           )}
@@ -368,10 +352,10 @@ Return ONLY valid JSON:
 
           <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
             <button onClick={save} style={{ flex: 1, background: C.orange, color: C.white, border: "none", borderRadius: 8, padding: "12px 0", fontWeight: 700, fontSize: 14, cursor: "pointer", boxShadow: "0 2px 8px rgba(244,130,31,0.3)" }}>
-              💾 Save to Database
+              ðŸ’¾ Save to Database
             </button>
             <button onClick={() => setStep("idle")} style={{ flex: 1, background: C.bg, color: C.textMuted, border: `1px solid ${C.border}`, borderRadius: 8, padding: "12px 0", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
-              ✕ Discard
+              âœ• Discard
             </button>
           </div>
         </div>
@@ -380,7 +364,7 @@ Return ONLY valid JSON:
   );
 }
 
-// ── DATABASE TAB ───────────────────────────────────────────────────────────
+// â”€â”€ DATABASE TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function DatabaseTab({ entries, onDelete, isAdmin, onExport }) {
   const [filter, setFilter]       = useState("");
   const [kwFilter, setKwFilter]   = useState("");
@@ -410,12 +394,12 @@ function DatabaseTab({ entries, onDelete, isAdmin, onExport }) {
             {reps.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
         )}
-        <button onClick={onExport} style={{ background: C.navy, color: C.white, border: "none", borderRadius: 8, padding: "9px 16px", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>⬇ Export CSV</button>
+        <button onClick={onExport} style={{ background: C.navy, color: C.white, border: "none", borderRadius: 8, padding: "9px 16px", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>â¬‡ Export CSV</button>
       </div>
 
       {filtered.length === 0 ? (
         <div style={{ textAlign: "center", color: C.textMuted, padding: "48px 0", fontSize: 14 }}>
-          {entries.length === 0 ? "No entries yet — record your first call!" : "No results match your filter."}
+          {entries.length === 0 ? "No entries yet â€” record your first call!" : "No results match your filter."}
         </div>
       ) : filtered.map(e => {
         const customer  = e.customerName || e.customer_name;
@@ -427,13 +411,13 @@ function DatabaseTab({ entries, onDelete, isAdmin, onExport }) {
               <div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: C.text }}>{customer}</div>
                 <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>
-                  {e.organisation && `${e.organisation}  ·  `}{e.salesperson}  ·  {e.date}
+                  {e.organisation && `${e.organisation}  Â·  `}{e.salesperson}  Â·  {e.date}
                 </div>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "flex-start" }}>
                 {(e.keywords || []).map(k => <Badge key={k} label={k} />)}
                 {isAdmin && (
-                  <button onClick={() => onDelete(e.id)} style={{ background: C.redLight, border: `1px solid ${C.red}`, color: C.red, borderRadius: 4, padding: "3px 9px", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>✕</button>
+                  <button onClick={() => onDelete(e.id)} style={{ background: C.redLight, border: `1px solid ${C.red}`, color: C.red, borderRadius: 4, padding: "3px 9px", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>âœ•</button>
                 )}
               </div>
             </div>
@@ -441,7 +425,7 @@ function DatabaseTab({ entries, onDelete, isAdmin, onExport }) {
             {followups.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 4, borderTop: `1px solid ${C.border}`, paddingTop: 10 }}>
                 {followups.map((f, i) => (
-                  <div key={i} style={{ fontSize: 12, color: C.yellow, borderLeft: `3px solid ${C.yellow}`, paddingLeft: 8, fontWeight: 500 }}>→ {f}</div>
+                  <div key={i} style={{ fontSize: 12, color: C.yellow, borderLeft: `3px solid ${C.yellow}`, paddingLeft: 8, fontWeight: 500 }}>â†’ {f}</div>
                 ))}
               </div>
             )}
@@ -452,7 +436,7 @@ function DatabaseTab({ entries, onDelete, isAdmin, onExport }) {
   );
 }
 
-// ── MANAGER DASHBOARD ──────────────────────────────────────────────────────
+// â”€â”€ MANAGER DASHBOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ManagerDashboard({ entries }) {
   const reps     = [...new Set(entries.map(e => e.salesperson).filter(Boolean))];
   const kwCounts = KEYWORDS.map(k => ({ label: k, count: entries.filter(e => e.keywords?.includes(k)).length }));
@@ -528,7 +512,7 @@ function ManagerDashboard({ entries }) {
   );
 }
 
-// ── QUERY TAB ──────────────────────────────────────────────────────────────
+// â”€â”€ QUERY TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function QueryTab({ entries }) {
   const [query, setQuery]     = useState("");
   const [answer, setAnswer]   = useState("");
@@ -536,7 +520,7 @@ function QueryTab({ entries }) {
 
   async function ask() {
     if (!query.trim()) return;
-    if (entries.length === 0) { setAnswer("No entries yet — log some calls first!"); return; }
+    if (entries.length === 0) { setAnswer("No entries yet â€” log some calls first!"); return; }
     setLoading(true); setAnswer("");
     const db = entries.map(e =>
       `Date:${e.date}|Rep:${e.salesperson}|Surgeon:${e.customerName || e.customer_name}|Hospital:${e.organisation || ""}|Topic:${e.topicDiscussed || e.topic_discussed}|Followups:${(e.keyFollowups || e.key_followups || []).join("; ")}|Flags:${(e.keywords || []).join(", ")}|Summary:${e.summary}`
@@ -568,7 +552,7 @@ function QueryTab({ entries }) {
       </div>
 
       <div style={cardSt}>
-        <div style={{ fontSize: 11, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 700, marginBottom: 10 }}>Example queries — tap to use</div>
+        <div style={{ fontSize: 11, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 700, marginBottom: 10 }}>Example queries â€” tap to use</div>
         {[
           "What were the last 2 discussions with Surgeon [name]?",
           "Which accounts are flagged as Business at Risk?",
@@ -598,7 +582,7 @@ function QueryTab({ entries }) {
   );
 }
 
-// ── MAIN APP ───────────────────────────────────────────────────────────────
+// â”€â”€ MAIN APP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function App() {
   const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
@@ -660,10 +644,10 @@ export default function App() {
   if (!user) return <LoginScreen onLogin={u => { setUser(u); fetchEntries(); }} />;
 
   const TABS = [
-    { id: "record",   label: "🎙 Record"   },
-    { id: "database", label: `📋 Calls${entries.length > 0 ? ` (${entries.length})` : ""}` },
-    { id: "query",    label: "🔍 Query"    },
-    ...(isAdmin ? [{ id: "manager", label: "⚙️ Manager" }] : []),
+    { id: "record",   label: "ðŸŽ™ Record"   },
+    { id: "database", label: `ðŸ“‹ Calls${entries.length > 0 ? ` (${entries.length})` : ""}` },
+    { id: "query",    label: "ðŸ” Query"    },
+    ...(isAdmin ? [{ id: "manager", label: "âš™ï¸ Manager" }] : []),
   ];
 
   return (
@@ -698,7 +682,7 @@ export default function App() {
       </div>
 
       <div style={{ textAlign: "center", padding: "24px 0 32px", fontSize: 11, color: C.textMuted }}>
-        Smith+Nephew Netherlands · Sales CRM · Confidential
+        Smith+Nephew Netherlands Â· Sales CRM Â· Confidential
       </div>
     </div>
   );
