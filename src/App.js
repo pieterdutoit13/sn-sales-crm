@@ -223,8 +223,12 @@ Return ONLY valid JSON:
 }` }]
         })
       });
-      const data   = await res.json();
-      const parsed = JSON.parse(data.content.map(b => b.text || "").join("").replace(/```json|```/g, "").trim());
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      const rawText = data.content.map(b => b.text || "").join("");
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("No JSON found in response");
+      const parsed = JSON.parse(jsonMatch[0]);
       setExtracted(parsed); setStep("extracted");
     } catch (e) { alert("Extraction failed: " + e.message); setStep("idle"); }
     setProcessing(false);
@@ -534,6 +538,7 @@ function QueryTab({ entries }) {
         })
       });
       const data = await res.json();
+      if (data.error) throw new Error(data.error);
       setAnswer(data.content.map(b => b.text || "").join(""));
     } catch { setAnswer("Query failed. Please try again."); }
     setLoading(false);
