@@ -196,7 +196,7 @@ function RecordTab({ user, onSave }) {
     if (!transcript.trim()) { alert("Please enter your call notes first."); return; }
     setProcessing(true); setStep("processing");
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/claude", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514", max_tokens: 1000,
@@ -258,7 +258,7 @@ Return ONLY valid JSON:
 
       {/* Rep info bar */}
       <div style={{ ...cardSt, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px" }}>
-        <div style={{ width: 36, height: 36, borderRadius: "50%", background: C.orangeLight, border: `2px solid ${C.orange}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>ðŸ‘¤</div>
+        <div style={{ width: 36, height: 36, borderRadius: "50%", background: C.orangeLight, border: `2px solid ${C.orange}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>â€¢</div>
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{repName}</div>
           <div style={{ fontSize: 11, color: C.textMuted }}>{user?.email}</div>
@@ -268,11 +268,11 @@ Return ONLY valid JSON:
 
       {/* How to dictate instruction card */}
       <div style={{ background: C.navyLight, border: `1px solid ${C.navy}22`, borderRadius: 12, padding: 16 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: C.navy, marginBottom: 10 }}>ðŸŽ™ How to log a call</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.navy, marginBottom: 10 }}>How to log a call</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {[
             ["1", "Tap the notes box below"],
-            ["2", "Tap the ðŸŽ¤ mic icon on your phone keyboard"],
+            ["2", "Tap the mic icon on your phone keyboard"],
             ["3", "Speak your call notes naturally"],
             ["4", "Tap the keyboard mic again to stop"],
             ["5", "Tap Extract CRM Data"],
@@ -287,10 +287,10 @@ Return ONLY valid JSON:
 
       {/* Text input */}
       <div>
-        <label style={labelSt}>Call Notes â€” tap here then use keyboard mic ðŸŽ¤</label>
+        <label style={labelSt}>Call Notes</label>
         <textarea
           style={{ ...inputSt, minHeight: 140, resize: "vertical", lineHeight: 1.65, fontSize: 15 }}
-          placeholder={"Tap the mic ðŸŽ¤ on your keyboard and speak, or type here.\n\nE.g. \"Visited Dr. Van der Berg at Amsterdam UMC today. Discussed the JOURNEY II knee system. Very interested but needs cadaver lab session. Follow up next week.\""}
+          placeholder={"Tap the mic on your keyboard and speak, or type here.\n\nE.g. \"Visited Dr. Van der Berg at Amsterdam UMC today. Discussed the JOURNEY II knee system. Very interested but needs cadaver lab session. Follow up next week.\""}
           value={transcript}
           onChange={e => setTranscript(e.target.value)}
         />
@@ -301,7 +301,7 @@ Return ONLY valid JSON:
 
       {step !== "extracted" && (
         <button onClick={extract} disabled={processing || !transcript.trim()} style={btnOrange(processing || !transcript.trim())}>
-          {processing ? "â³ Extracting with AI..." : "âœ¨ Extract CRM Data"}
+          {processing ? "Extracting with AI..." : "Extract CRM Data"}
         </button>
       )}
 
@@ -352,7 +352,7 @@ Return ONLY valid JSON:
 
           <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
             <button onClick={save} style={{ flex: 1, background: C.orange, color: C.white, border: "none", borderRadius: 8, padding: "12px 0", fontWeight: 700, fontSize: 14, cursor: "pointer", boxShadow: "0 2px 8px rgba(244,130,31,0.3)" }}>
-              ðŸ’¾ Save to Database
+              Save to Database
             </button>
             <button onClick={() => setStep("idle")} style={{ flex: 1, background: C.bg, color: C.textMuted, border: `1px solid ${C.border}`, borderRadius: 8, padding: "12px 0", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
               âœ• Discard
@@ -394,7 +394,7 @@ function DatabaseTab({ entries, onDelete, isAdmin, onExport }) {
             {reps.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
         )}
-        <button onClick={onExport} style={{ background: C.navy, color: C.white, border: "none", borderRadius: 8, padding: "9px 16px", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>â¬‡ Export CSV</button>
+        <button onClick={onExport} style={{ background: C.navy, color: C.white, border: "none", borderRadius: 8, padding: "9px 16px", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>Export CSV</button>
       </div>
 
       {filtered.length === 0 ? (
@@ -526,7 +526,7 @@ function QueryTab({ entries }) {
       `Date:${e.date}|Rep:${e.salesperson}|Surgeon:${e.customerName || e.customer_name}|Hospital:${e.organisation || ""}|Topic:${e.topicDiscussed || e.topic_discussed}|Followups:${(e.keyFollowups || e.key_followups || []).join("; ")}|Flags:${(e.keywords || []).join(", ")}|Summary:${e.summary}`
     ).join("\n");
     try {
-      const res  = await fetch("https://api.anthropic.com/v1/messages", {
+      const res  = await fetch("/api/claude", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514", max_tokens: 1000,
@@ -644,10 +644,10 @@ export default function App() {
   if (!user) return <LoginScreen onLogin={u => { setUser(u); fetchEntries(); }} />;
 
   const TABS = [
-    { id: "record",   label: "ðŸŽ™ Record"   },
-    { id: "database", label: `ðŸ“‹ Calls${entries.length > 0 ? ` (${entries.length})` : ""}` },
-    { id: "query",    label: "ðŸ” Query"    },
-    ...(isAdmin ? [{ id: "manager", label: "âš™ï¸ Manager" }] : []),
+    { id: "record",   label: "Record" },
+    { id: "database", label: `Calls${entries.length > 0 ? ` (${entries.length})` : ""}` },
+    { id: "query",    label: "Query" },
+    ...(isAdmin ? [{ id: "manager", label: "Manager" }] : []),
   ];
 
   return (
