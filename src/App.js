@@ -622,9 +622,76 @@ function DatabaseTab({ entries, onDelete, onEdit, isAdmin, onExport }) {
 
 
 // â”€â”€ FOLLOWUPS TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function FollowupsTab({ followups, isAdmin, onToggle }) {
+function EntryDetailModal({ entry, followupAction, onClose }) {
+  if (!entry) return null;
+  const followups = (entry.key_followups||[]).map(f => {
+    if (typeof f==="object"&&f!==null) return f;
+    if (typeof f==="string"&&f.startsWith("{")) { try { return JSON.parse(f); } catch {} }
+    return { action:f, dueDate:null };
+  });
+
+  return (
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }} onClick={onClose}>
+      <div style={{ background:C.white, borderRadius:16, padding:24, width:"100%", maxWidth:500, maxHeight:"88vh", overflowY:"auto", boxShadow:C.shadowMd }} onClick={e=>e.stopPropagation()}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+          <div style={{ fontWeight:800, fontSize:16, color:C.navy }}>Full Call Entry</div>
+          <button onClick={onClose} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 14px", cursor:"pointer", fontSize:13, color:C.textMuted, fontFamily:"inherit" }}>Close</button>
+        </div>
+
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            {[["Surgeon",entry.customer_name],["Hospital",entry.organisation||"-"],["Date",entry.date],["Rep",entry.salesperson],["Product",entry.product_line||"-"],["Sentiment",entry.sentiment||"-"]].map(([k,v])=>(
+              <div key={k}><div style={mSt}>{k}</div><div style={{ fontSize:13, fontWeight:600, color:C.text }}>{v}</div></div>
+            ))}
+          </div>
+
+          <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:14 }}>
+            <div style={mSt}>Topic Discussed</div>
+            <div style={{ fontSize:13, color:C.text, lineHeight:1.65 }}>{entry.topic_discussed}</div>
+          </div>
+
+          <div>
+            <div style={mSt}>Summary</div>
+            <div style={{ fontSize:13, color:C.textMid, lineHeight:1.65 }}>{entry.summary}</div>
+          </div>
+
+          {followups.length>0 && (
+            <div>
+              <div style={mSt}>All Follow-ups</div>
+              {followups.map((f,i)=>(
+                <div key={i} style={{ fontSize:13, borderLeft:`3px solid ${f.action===followupAction?C.orange:C.border}`, paddingLeft:10, marginBottom:6, background:f.action===followupAction?C.orangeLight:"transparent", borderRadius:"0 6px 6px 0", padding:"6px 10px" }}>
+                  <div style={{ fontWeight:f.action===followupAction?700:400, color:f.action===followupAction?C.orange:C.text }}>{f.action}</div>
+                  {f.dueDate&&<div style={{ fontSize:11, color:C.textMuted, marginTop:2 }}>Due: {f.dueDate}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {(entry.keywords||[]).length>0 && (
+            <div>
+              <div style={mSt}>Flags</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                {entry.keywords.map(k=><Badge key={k} label={k}/>)}
+              </div>
+            </div>
+          )}
+
+          {entry.transcript && (
+            <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:14 }}>
+              <div style={mSt}>Original Transcript</div>
+              <div style={{ fontSize:12, color:C.textMuted, fontStyle:"italic", lineHeight:1.6 }}>"{entry.transcript}"</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FollowupsTab({ followups, entries, isAdmin, onToggle }) {
   const [filter, setFilter] = useState("all"); // all | overdue | upcoming | completed
   const [repFilter, setRepFilter] = useState("");
+  const [selectedFollowup, setSelectedFollowup] = useState(null);
   const reps = [...new Set(followups.map(f=>f.salesperson).filter(Boolean))];
 
   function getStatus(f) {
@@ -704,6 +771,14 @@ function FollowupsTab({ followups, isAdmin, onToggle }) {
       </div>
 
       {/* Followup cards */}
+      {selectedFollowup && (
+        <EntryDetailModal
+          entry={entries.find(e=>e.id===selectedFollowup.entryId)}
+          followupAction={selectedFollowup.action}
+          onClose={()=>setSelectedFollowup(null)}
+        />
+      )}
+
       {filtered.length===0 ? (
         <div style={{ textAlign:"center", color:C.textMuted, padding:"48px 0", fontSize:14 }}>
           {followups.length===0?"No follow-ups yet - start logging calls!":"No follow-ups match this filter."}
@@ -713,7 +788,7 @@ function FollowupsTab({ followups, isAdmin, onToggle }) {
         return (
           <div key={f.id} style={{ ...cSt, borderLeft:`4px solid ${s.border}`, opacity:f.completed?0.7:1 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
-              <div style={{ flex:1 }}>
+              <div style={{ flex:1, cursor:"pointer" }} onClick={()=>setSelectedFollowup(f)}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
                   <span style={{ background:s.bg, border:`1px solid ${s.border}`, color:s.text, borderRadius:4, padding:"2px 8px", fontSize:10, fontWeight:700 }}>{s.label}</span>
                   {f.dueDate && <span style={{ fontSize:11, color:C.textMuted }}>Due: {f.dueDate}</span>}
@@ -724,6 +799,7 @@ function FollowupsTab({ followups, isAdmin, onToggle }) {
                 <div style={{ fontSize:11, color:C.textMuted }}>
                   {f.surgeon}{f.hospital?` - ${f.hospital}`:""}{f.salesperson?` | ${f.salesperson}`:""}
                 </div>
+                <div style={{ fontSize:11, color:C.orange, marginTop:4, fontWeight:600 }}>Tap to view full call entry</div>
               </div>
               <button
                 onClick={()=>onToggle(f.id, f.entryId)}
@@ -1030,7 +1106,7 @@ export default function App() {
       <div style={{ maxWidth:640, margin:"0 auto", padding:20 }}>
         {tab==="record"  &&<RecordTab user={user} onSave={handleSave}/>}
         {tab==="database"&&<DatabaseTab entries={entries} onDelete={deleteEntry} onEdit={handleEdit} isAdmin={isAdmin} onExport={exportCSV}/>}
-        {tab==="followups"&&<FollowupsTab followups={allFollowups} isAdmin={isAdmin} onToggle={handleToggleFollowup}/>}
+        {tab==="followups"&&<FollowupsTab followups={allFollowups} entries={entries} isAdmin={isAdmin} onToggle={handleToggleFollowup}/>}
         {tab==="query"   &&<QueryTab entries={entries}/>}
         {tab==="manager"&&isAdmin&&<ManagerDashboard entries={entries}/>}
       </div>
