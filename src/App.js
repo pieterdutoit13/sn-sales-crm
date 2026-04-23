@@ -688,7 +688,7 @@ function EntryDetailModal({ entry, followupAction, onClose }) {
   );
 }
 
-function FollowupsTab({ followups, entries, isAdmin, onToggle }) {
+function FollowupsTab({ followups, entries, isAdmin, onToggle, onExport }) {
   const [filter, setFilter] = useState("all"); // all | overdue | upcoming | completed
   const [repFilter, setRepFilter] = useState("");
   const [selectedFollowup, setSelectedFollowup] = useState(null);
@@ -768,6 +768,9 @@ function FollowupsTab({ followups, entries, isAdmin, onToggle }) {
             {reps.map(r=><option key={r} value={r}>{r}</option>)}
           </select>
         )}
+        <button onClick={onExport} style={{ background:C.navy, color:C.white, border:"none", borderRadius:8, padding:"7px 14px", fontWeight:700, fontSize:12, cursor:"pointer", whiteSpace:"nowrap" }}>
+          Export CSV
+        </button>
       </div>
 
       {/* Followup cards */}
@@ -1003,12 +1006,142 @@ export default function App() {
   }
 
   function exportCSV() {
-    const headers=["Date","Salesperson","Surgeon","Hospital","Product","Topic","Follow-ups","Flags","Sentiment","Summary"];
-    const rows=entries.map(e=>[e.date,e.salesperson,e.customer_name,e.organisation,e.product_line||"",e.topic_discussed,(e.key_followups||[]).join("; "),(e.keywords||[]).join("; "),e.sentiment,e.summary].map(v=>`"${String(v||"").replace(/"/g,'""')}"`));
+    const headers=[
+      "Date",
+      "Salesperson",
+      "Surgeon",
+      "Hospital",
+      "Product Line",
+      "Topic Discussed",
+      "AI Summary",
+      "Follow-up Actions",
+      "Follow-up Due Dates",
+      "Flags",
+      "Sentiment",
+      "Original Transcript",
+    ];
+
+    const rows = entries.map(e => {
+      // Parse followups - handle both string and object formats
+      const followups = (e.key_followups||[]).map(f => {
+        if (typeof f==="object"&&f!==null) return f;
+        if (typeof f==="string"&&f.startsWith("{")) { try { return JSON.parse(f); } catch {} }
+        return { action:f, dueDate:"" };
+      });
+
+      const followupActions = followups.map(f=>f.action||f).join(" | ");
+      const followupDates   = followups.map(f=>f.dueDate||"").join(" | ");
+
+      return [
+        e.date,
+        e.salesperson,
+        e.customer_name,
+        e.organisation||"",
+        e.product_line||"",
+        e.topic_discussed||"",
+        e.summary||"",
+        followupActions,
+        followupDates,
+        (e.keywords||[]).join("; "),
+        e.sentiment||"",
+        e.transcript||"",
+      ].map(v=>`"${String(v||"").replace(/"/g,'""')}"`);
+    });
+
     const csv=[headers,...rows].map(r=>r.join(",")).join("\n");
     const a=document.createElement("a");
-    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-    a.download=`SN_Sales_${new Date().toLocaleDateString("en-GB").replace(/\//g,"-")}.csv`;
+    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+    a.download=`SN_Sales_Export_${new Date().toLocaleDateString("en-GB").replace(/\//g,"-")}.csv`;
+    a.click();
+  }
+
+  function exportFollowupsCSV() {
+    // Build all followups with full context
+    const allFU = entries.flatMap(e =>
+      (e.key_followups||[]).map((f,i) => {
+        let action="", dueDate="";
+        if (typeof f==="object"&&f!==null) { action=f.action||""; dueDate=f.dueDate||""; }
+        else if (typeof f==="string"&&f.startsWith("{")) {
+          try { const p=JSON.parse(f); action=p.action||f; dueDate=p.dueDate||""; } catch { action=f; }
+        } else { action=f; }
+
+        // Calculate status
+        let status = "Upcoming";
+        if (dueDate) {
+          const parts = dueDate.split("/");
+          if (parts.length===3) {
+            const due = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+            const today = new Date(); today.setHours(0,0,0,0);
+            const diff = Math.ceil((due-today)/(1000*60*60*24));
+            if (diff < 0) status = "Overdue";
+            else if (diff <= 3) status = "Due Soon";
+            else status = "Upcoming";
+          }
+        }
+        const completed = (e.completed_followups||[]).includes(`${e.id}-${i}`);
+        if (completed) status = "Completed";
+
+        // Parse date for sorting DD/MM/YYYY -> sortable number
+        let sortDate = 99999999;
+        if (dueDate) {
+          const parts = dueDate.split("/");
+          if (parts.length===3) sortDate = parseInt(`${parts[2]}${parts[1].padStart(2,"0")}${parts[0].padStart(2,"0")}`);
+        }
+
+        return {
+          action, dueDate, status, sortDate,
+          completed,
+          surgeon:    e.customer_name||"",
+          hospital:   e.organisation||"",
+          salesperson:e.salesperson||"",
+          callDate:   e.date||"",
+          product:    e.product_line||"",
+          flags:      (e.keywords||[]).join("; "),
+          summary:    e.summary||"",
+        };
+      })
+    );
+
+    // Sort: Overdue first, then Due Soon, then Upcoming by date, Completed last
+    const statusOrder = { "Overdue":0, "Due Soon":1, "Upcoming":2, "Completed":3 };
+    allFU.sort((a,b) => {
+      const so = (statusOrder[a.status]||2) - (statusOrder[b.status]||2);
+      if (so!==0) return so;
+      return a.sortDate - b.sortDate;
+    });
+
+    const headers = [
+      "Status",
+      "Due Date",
+      "Follow-up Action",
+      "Surgeon",
+      "Hospital",
+      "Salesperson",
+      "Call Date",
+      "Product Line",
+      "Flags",
+      "Call Summary",
+      "Completed",
+    ];
+
+    const rows = allFU.map(f => [
+      f.status,
+      f.dueDate,
+      f.action,
+      f.surgeon,
+      f.hospital,
+      f.salesperson,
+      f.callDate,
+      f.product,
+      f.flags,
+      f.summary,
+      f.completed?"Yes":"No",
+    ].map(v=>`"${String(v||"").replace(/"/g,'""')}"`));
+
+    const csv=[headers,...rows].map(r=>r.join(",")).join("\n");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+    a.download=`SN_Followups_${new Date().toLocaleDateString("en-GB").replace(/\//g,"-")}.csv`;
     a.click();
   }
 
@@ -1106,7 +1239,7 @@ export default function App() {
       <div style={{ maxWidth:640, margin:"0 auto", padding:20 }}>
         {tab==="record"  &&<RecordTab user={user} onSave={handleSave}/>}
         {tab==="database"&&<DatabaseTab entries={entries} onDelete={deleteEntry} onEdit={handleEdit} isAdmin={isAdmin} onExport={exportCSV}/>}
-        {tab==="followups"&&<FollowupsTab followups={allFollowups} entries={entries} isAdmin={isAdmin} onToggle={handleToggleFollowup}/>}
+        {tab==="followups"&&<FollowupsTab followups={allFollowups} entries={entries} isAdmin={isAdmin} onToggle={handleToggleFollowup} onExport={exportFollowupsCSV}/>}
         {tab==="query"   &&<QueryTab entries={entries}/>}
         {tab==="manager"&&isAdmin&&<ManagerDashboard entries={entries}/>}
       </div>
