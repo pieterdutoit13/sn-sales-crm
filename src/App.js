@@ -305,6 +305,7 @@ function RecordTab({ user, onSave }) {
       )}
 
       {/* Extracted data - fully editable before saving */}
+     {/* Extracted data - editable before saving */}
       {recState==="extracted" && extracted && (
         <div style={{ ...cSt, border:`2px solid ${C.orange}`, display:"flex", flexDirection:"column", gap:14 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -312,7 +313,6 @@ function RecordTab({ user, onSave }) {
             <div style={{ color:C.orange, fontWeight:700, fontSize:12, textTransform:"uppercase", letterSpacing:"0.06em" }}>Review and Edit Before Saving</div>
           </div>
 
-          {/* Transcript preview */}
           {transcript && (
             <div style={{ background:C.bg, borderRadius:8, padding:"10px 12px" }}>
               <div style={mSt}>Transcription</div>
@@ -320,42 +320,64 @@ function RecordTab({ user, onSave }) {
             </div>
           )}
 
-          {/* Editable fields */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, borderTop:`1px solid ${C.border}`, paddingTop:14 }}>
             <div>
               <label style={lSt}>Surgeon Name</label>
-              <input style={{ ...iSt, fontSize:13, padding:"8px 10px" }}
-                value={extracted.surgeonName||""}
-                onChange={e=>setExtracted(x=>({...x, surgeonName:e.target.value}))}/>
+              <input style={{ ...iSt, fontSize:13, padding:"8px 10px" }} value={extracted.surgeonName||""} onChange={e=>setExtracted(x=>({...x,surgeonName:e.target.value}))}/>
             </div>
             <div>
               <label style={lSt}>Hospital</label>
-              <input style={{ ...iSt, fontSize:13, padding:"8px 10px" }}
-                value={extracted.hospital||""}
-                onChange={e=>setExtracted(x=>({...x, hospital:e.target.value}))}/>
+              <input style={{ ...iSt, fontSize:13, padding:"8px 10px" }} value={extracted.hospital||""} onChange={e=>setExtracted(x=>({...x,hospital:e.target.value}))}/>
             </div>
             <div>
               <label style={lSt}>Date</label>
-              <input style={{ ...iSt, fontSize:13, padding:"8px 10px" }}
-                value={extracted.date||""}
-                onChange={e=>setExtracted(x=>({...x, date:e.target.value}))}/>
+              <input style={{ ...iSt, fontSize:13, padding:"8px 10px" }} value={extracted.date||""} onChange={e=>setExtracted(x=>({...x,date:e.target.value}))}/>
             </div>
             <div>
               <label style={lSt}>Product Line</label>
-              <input style={{ ...iSt, fontSize:13, padding:"8px 10px" }}
-                value={extracted.productLine||""}
-                onChange={e=>setExtracted(x=>({...x, productLine:e.target.value}))}/>
+              <input style={{ ...iSt, fontSize:13, padding:"8px 10px" }} value={extracted.productLine||""} onChange={e=>setExtracted(x=>({...x,productLine:e.target.value}))}/>
             </div>
             <div>
               <label style={lSt}>Sentiment</label>
-              <select style={{ ...iSt, fontSize:13, padding:"8px 10px" }}
-                value={extracted.sentiment||"neutral"}
-                onChange={e=>setExtracted(x=>({...x, sentiment:e.target.value}))}>
+              <select style={{ ...iSt, fontSize:13, padding:"8px 10px" }} value={extracted.sentiment||"neutral"} onChange={e=>setExtracted(x=>({...x,sentiment:e.target.value}))}>
                 <option value="positive">Positive</option>
                 <option value="neutral">Neutral</option>
                 <option value="negative">Negative</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label style={lSt}>Topic Discussed</label>
+            <input style={{ ...iSt, fontSize:13, padding:"8px 10px" }} value={extracted.topicDiscussed||""} onChange={e=>setExtracted(x=>({...x,topicDiscussed:e.target.value}))}/>
+          </div>
+
+          <div>
+            <label style={lSt}>Follow-ups (one per line)</label>
+            <textarea style={{ ...iSt, fontSize:13, padding:"8px 10px", minHeight:70, resize:"vertical", lineHeight:1.6 }} value={(extracted.keyFollowups||[]).join("\n")} onChange={e=>setExtracted(x=>({...x,keyFollowups:e.target.value.split("\n")}))}/>
+          </div>
+
+          <div>
+            <label style={lSt}>Flags - tap to toggle</label>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+              {KEYWORDS.map(kw=>{
+                const active=(extracted.keywords||[]).includes(kw);
+                const c=KW[kw];
+                return <div key={kw} onClick={()=>setExtracted(x=>({...x,keywords:active?(x.keywords||[]).filter(k=>k!==kw):[...(x.keywords||[]),kw]}))} style={{ background:active?c.bg:C.bg, border:`1.5px solid ${active?c.border:C.border}`, color:active?c.text:C.textMuted, borderRadius:6, padding:"6px 12px", fontSize:12, fontWeight:600, cursor:"pointer" }}>{kw}</div>;
+              })}
+            </div>
+          </div>
+
+          <div style={{ display:"flex", gap:10, paddingTop:4 }}>
+            <button onClick={save} style={{ flex:1, background:C.orange, color:C.white, border:"none", borderRadius:8, padding:"13px 0", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:"0 2px 8px rgba(244,130,31,0.3)" }}>
+              Save to Database
+            </button>
+            <button onClick={reset} style={{ flex:1, background:C.bg, color:C.textMuted, border:`1px solid ${C.border}`, borderRadius:8, padding:"13px 0", fontWeight:600, fontSize:14, cursor:"pointer" }}>
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
           </div>
 
           <div>
