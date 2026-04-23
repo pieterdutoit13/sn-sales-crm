@@ -209,6 +209,7 @@ function RecordTab({ user, onSave }) {
       summary:         extracted.summary || "",
       product_line:    extracted.productLine || "",
       transcript:      transcript || "",
+      completed_followups: [],
     };
     if (supabase) {
       const { error:err } = await supabase.from("entries").insert([entry]);
@@ -366,10 +367,38 @@ function RecordTab({ user, onSave }) {
           </div>
 
           <div>
-            <label style={lSt}>Key Follow-ups (one per line)</label>
-            <textarea style={{ ...iSt, fontSize:13, padding:"8px 10px", minHeight:70, resize:"vertical", lineHeight:1.6 }}
-              value={(extracted.keyFollowups||[]).join("\n")}
-              onChange={e=>setExtracted(x=>({...x, keyFollowups:e.target.value.split("\n")}))}/>
+            <label style={lSt}>Key Follow-ups</label>
+            {(extracted.keyFollowups||[]).map((f,i)=>{
+              const action = typeof f==="object"?f.action:f;
+              const dueDate = typeof f==="object"?f.dueDate:"";
+              return (
+                <div key={i} style={{ background:C.bg, borderRadius:8, padding:"10px 12px", marginBottom:8, display:"flex", flexDirection:"column", gap:6 }}>
+                  <input
+                    style={{ ...iSt, fontSize:13, padding:"7px 10px" }}
+                    placeholder="Follow-up action"
+                    value={action}
+                    onChange={e=>{
+                      const updated=[...(extracted.keyFollowups||[])];
+                      updated[i]=typeof f==="object"?{...f,action:e.target.value}:e.target.value;
+                      setExtracted(x=>({...x,keyFollowups:updated}));
+                    }}
+                  />
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:11, color:C.textMuted, whiteSpace:"nowrap" }}>Due date:</span>
+                    <input
+                      style={{ ...iSt, fontSize:13, padding:"7px 10px", flex:1 }}
+                      placeholder="DD/MM/YYYY"
+                      value={dueDate}
+                      onChange={e=>{
+                        const updated=[...(extracted.keyFollowups||[])];
+                        updated[i]=typeof f==="object"?{...f,dueDate:e.target.value}:{action:f,dueDate:e.target.value};
+                        setExtracted(x=>({...x,keyFollowups:updated}));
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <div>
@@ -580,6 +609,124 @@ function DatabaseTab({ entries, onDelete, onEdit, isAdmin, onExport }) {
   );
 }
 
+
+// â”€â”€ FOLLOWUPS TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function FollowupsTab({ followups, isAdmin, onToggle }) {
+  const [filter, setFilter] = useState("all"); // all | overdue | upcoming | completed
+  const [repFilter, setRepFilter] = useState("");
+  const reps = [...new Set(followups.map(f=>f.salesperson).filter(Boolean))];
+
+  function getStatus(f) {
+    if (f.completed) return "completed";
+    if (!f.dueDate) return "upcoming";
+    const [d,m,y] = f.dueDate.split("/");
+    const due = new Date(`${y}-${m}-${d}`);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const diff = Math.ceil((due - today) / (1000*60*60*24));
+    if (diff < 0) return "overdue";
+    if (diff <= 3) return "dueSoon";
+    return "upcoming";
+  }
+
+  const STATUS = {
+    overdue:   { label:"Overdue",   bg:C.redLight,    border:C.red,    text:C.red    },
+    dueSoon:   { label:"Due Soon",  bg:C.yellowLight, border:C.yellow, text:C.yellow },
+    upcoming:  { label:"Upcoming",  bg:C.navyLight,   border:C.navy,   text:C.navy   },
+    completed: { label:"Done",      bg:C.greenLight,  border:C.green,  text:C.green  },
+  };
+
+  const filtered = followups
+    .map(f => ({ ...f, status: getStatus(f) }))
+    .filter(f => {
+      if (filter === "overdue")   return f.status === "overdue";
+      if (filter === "upcoming")  return f.status === "upcoming" || f.status === "dueSoon";
+      if (filter === "completed") return f.status === "completed";
+      return true;
+    })
+    .filter(f => !repFilter || f.salesperson === repFilter)
+    .sort((a,b) => {
+      // Sort: overdue first, then dueSoon, then upcoming, then completed
+      const order = { overdue:0, dueSoon:1, upcoming:2, completed:3 };
+      return (order[a.status]||2) - (order[b.status]||2);
+    });
+
+  const counts = {
+    all:       followups.length,
+    overdue:   followups.filter(f=>getStatus(f)==="overdue").length,
+    upcoming:  followups.filter(f=>["upcoming","dueSoon"].includes(getStatus(f))).length,
+    completed: followups.filter(f=>getStatus(f)==="completed").length,
+  };
+
+  const fSt = { background:C.white, border:`1.5px solid ${C.border}`, borderRadius:8, padding:"7px 10px", color:C.text, fontSize:12, outline:"none", fontFamily:"inherit", cursor:"pointer" };
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+
+      {/* Summary cards */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+        {[
+          ["Overdue", counts.overdue, C.red, C.redLight],
+          ["Upcoming", counts.upcoming, C.navy, C.navyLight],
+          ["Completed", counts.completed, C.green, C.greenLight],
+        ].map(([l,v,col,bg])=>(
+          <div key={l} style={{ background:bg, border:`1px solid ${col}22`, borderRadius:10, padding:"12px 8px", textAlign:"center" }}>
+            <div style={{ fontSize:26, fontWeight:800, color:col }}>{v}</div>
+            <div style={{ fontSize:10, color:C.textMuted, fontWeight:600 }}>{l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+        {[["all","All"],["overdue","Overdue"],["upcoming","Upcoming"],["completed","Done"]].map(([val,label])=>(
+          <button key={val} onClick={()=>setFilter(val)} style={{ ...fSt, background:filter===val?C.orange:C.white, color:filter===val?C.white:C.textMuted, border:`1.5px solid ${filter===val?C.orange:C.border}`, fontWeight:filter===val?700:400, padding:"7px 14px" }}>
+            {label} {counts[val]>0?`(${counts[val]})`:""}
+          </button>
+        ))}
+        {isAdmin && reps.length>0 && (
+          <select style={{ ...fSt, marginLeft:"auto" }} value={repFilter} onChange={e=>setRepFilter(e.target.value)}>
+            <option value="">All Reps</option>
+            {reps.map(r=><option key={r} value={r}>{r}</option>)}
+          </select>
+        )}
+      </div>
+
+      {/* Followup cards */}
+      {filtered.length===0 ? (
+        <div style={{ textAlign:"center", color:C.textMuted, padding:"48px 0", fontSize:14 }}>
+          {followups.length===0?"No follow-ups yet - start logging calls!":"No follow-ups match this filter."}
+        </div>
+      ) : filtered.map(f => {
+        const s = STATUS[f.status];
+        return (
+          <div key={f.id} style={{ ...cSt, borderLeft:`4px solid ${s.border}`, opacity:f.completed?0.7:1 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
+              <div style={{ flex:1 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                  <span style={{ background:s.bg, border:`1px solid ${s.border}`, color:s.text, borderRadius:4, padding:"2px 8px", fontSize:10, fontWeight:700 }}>{s.label}</span>
+                  {f.dueDate && <span style={{ fontSize:11, color:C.textMuted }}>Due: {f.dueDate}</span>}
+                </div>
+                <div style={{ fontSize:14, fontWeight:600, color:f.completed?C.textMuted:C.text, textDecoration:f.completed?"line-through":"none", lineHeight:1.5, marginBottom:6 }}>
+                  {f.action}
+                </div>
+                <div style={{ fontSize:11, color:C.textMuted }}>
+                  {f.surgeon}{f.hospital?` - ${f.hospital}`:""}{f.salesperson?` | ${f.salesperson}`:""}
+                </div>
+              </div>
+              <button
+                onClick={()=>onToggle(f.id, f.entryId)}
+                style={{ flexShrink:0, background:f.completed?C.greenLight:C.white, border:`1.5px solid ${f.completed?C.green:C.border}`, color:f.completed?C.green:C.textMuted, borderRadius:8, padding:"8px 12px", fontSize:12, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
+                {f.completed?"Completed":"Mark Done"}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // â”€â”€ QUERY TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function QueryTab({ entries }) {
   const [query, setQuery]     = useState("");
@@ -755,6 +902,19 @@ export default function App() {
     setEntries(prev => prev.map(e => e.id === updated.id ? { ...e, ...updated } : e));
   }
 
+  async function handleToggleFollowup(followupId, entryId) {
+    const entry = entries.find(e => e.id === entryId);
+    if (!entry) return;
+    const completed = entry.completed_followups || [];
+    const newCompleted = completed.includes(followupId)
+      ? completed.filter(f => f !== followupId)
+      : [...completed, followupId];
+    if (supabase) {
+      await supabase.from("entries").update({ completed_followups: newCompleted }).eq("id", entryId);
+    }
+    setEntries(prev => prev.map(e => e.id === entryId ? { ...e, completed_followups: newCompleted } : e));
+  }
+
   function exportCSV() {
     const headers=["Date","Salesperson","Surgeon","Hospital","Product","Topic","Follow-ups","Flags","Sentiment","Summary"];
     const rows=entries.map(e=>[e.date,e.salesperson,e.customer_name,e.organisation,e.product_line||"",e.topic_discussed,(e.key_followups||[]).join("; "),(e.keywords||[]).join("; "),e.sentiment,e.summary].map(v=>`"${String(v||"").replace(/"/g,'""')}"`));
@@ -776,10 +936,31 @@ export default function App() {
 
   if (!user) return <LoginScreen onLogin={u=>{ setUser(u); fetchEntries(); }}/>;
 
+  // Build followups list from all entries
+  const allFollowups = entries.flatMap(e =>
+    (e.key_followups||[]).map((f,i) => ({
+      id: `${e.id}-${i}`,
+      entryId: e.id,
+      action: typeof f === "object" ? f.action : f,
+      dueDate: typeof f === "object" ? f.dueDate : null,
+      surgeon: e.customer_name,
+      hospital: e.organisation,
+      salesperson: e.salesperson,
+      completed: (e.completed_followups||[]).includes(`${e.id}-${i}`),
+    }))
+  );
+
+  const overdueCount = allFollowups.filter(f => {
+    if (!f.dueDate || f.completed) return false;
+    const [d,m,y] = f.dueDate.split("/");
+    return new Date(`${y}-${m}-${d}`) < new Date();
+  }).length;
+
   const TABS=[
-    { id:"record",  label:"Record"  },
-    { id:"database",label:`Calls${entries.length>0?` (${entries.length})`:""}`},
-    { id:"query",   label:"Query"   },
+    { id:"record",    label:"Record" },
+    { id:"database",  label:`Calls${entries.length>0?` (${entries.length})`:""}`},
+    { id:"followups", label:`Follow-ups${overdueCount>0?` (${overdueCount})`:""}`},
+    { id:"query",     label:"Query" },
     ...(isAdmin?[{ id:"manager", label:"Manager" }]:[]),
   ];
 
@@ -819,6 +1000,7 @@ export default function App() {
       <div style={{ maxWidth:640, margin:"0 auto", padding:20 }}>
         {tab==="record"  &&<RecordTab user={user} onSave={handleSave}/>}
         {tab==="database"&&<DatabaseTab entries={entries} onDelete={deleteEntry} onEdit={handleEdit} isAdmin={isAdmin} onExport={exportCSV}/>}
+        {tab==="followups"&&<FollowupsTab followups={allFollowups} isAdmin={isAdmin} onToggle={handleToggleFollowup}/>}
         {tab==="query"   &&<QueryTab entries={entries}/>}
         {tab==="manager"&&isAdmin&&<ManagerDashboard entries={entries}/>}
       </div>
