@@ -1048,9 +1048,9 @@ export default function App() {
       ].map(v=>`"${String(v||"").replace(/"/g,'""')}"`);
     });
 
-    const csv=[headers,...rows].map(r=>r.join(",")).join("\n");
+    const csv=[headers,...rows].map(r=>r.join(";")).join("\n");
     const a=document.createElement("a");
-    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+    a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"}));
     a.download=`SN_Sales_Export_${new Date().toLocaleDateString("en-GB").replace(/\//g,"-")}.csv`;
     a.click();
   }
@@ -1138,9 +1138,9 @@ export default function App() {
       f.completed?"Yes":"No",
     ].map(v=>`"${String(v||"").replace(/"/g,'""')}"`));
 
-    const csv=[headers,...rows].map(r=>r.join(",")).join("\n");
+    const csv=[headers,...rows].map(r=>r.join(";")).join("\n");
     const a=document.createElement("a");
-    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+    a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"}));
     a.download=`SN_Followups_${new Date().toLocaleDateString("en-GB").replace(/\//g,"-")}.csv`;
     a.click();
   }
