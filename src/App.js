@@ -586,7 +586,18 @@ function DatabaseTab({ entries, onDelete, onEdit, isAdmin, onExport }) {
               {(e.key_followups||[]).length>0 && (
                 <div>
                   <div style={mSt}>Follow-ups</div>
-                  {(e.key_followups||[]).map((f,i)=><div key={i} style={{ fontSize:12, color:C.yellow, borderLeft:`3px solid ${C.yellow}`, paddingLeft:8, marginBottom:4 }}>>> {f}</div>)}
+                  {(e.key_followups||[]).map((f,i)=>{
+                    let action="", dueDate="";
+                    if (typeof f==="object"&&f!==null) { action=f.action||""; dueDate=f.dueDate||""; }
+                    else if (typeof f==="string"&&f.startsWith("{")) {
+                      try { const p=JSON.parse(f); action=p.action||f; dueDate=p.dueDate||""; } catch { action=f; }
+                    } else { action=f; }
+                    return (
+                      <div key={i} style={{ fontSize:12, color:C.yellow, borderLeft:`3px solid ${C.yellow}`, paddingLeft:8, marginBottom:4 }}>
+                        >> {action}{dueDate&&<span style={{ color:C.textMuted, marginLeft:6 }}>Due: {dueDate}</span>}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               {e.product_line && (
