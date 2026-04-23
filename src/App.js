@@ -938,16 +938,35 @@ export default function App() {
 
   // Build followups list from all entries
   const allFollowups = entries.flatMap(e =>
-    (e.key_followups||[]).map((f,i) => ({
-      id: `${e.id}-${i}`,
-      entryId: e.id,
-      action: typeof f === "object" ? f.action : f,
-      dueDate: typeof f === "object" ? f.dueDate : null,
-      surgeon: e.customer_name,
-      hospital: e.organisation,
-      salesperson: e.salesperson,
-      completed: (e.completed_followups||[]).includes(`${e.id}-${i}`),
-    }))
+    (e.key_followups||[]).map((f,i) => {
+      // Handle three formats:
+      // 1. Plain string: "Follow up next week"
+      // 2. JSON object: { action: "...", dueDate: "..." }
+      // 3. Stringified JSON: '{"action":"...","dueDate":"..."}'
+      let action = "", dueDate = null;
+      if (typeof f === "object" && f !== null) {
+        action = f.action || "";
+        dueDate = f.dueDate || null;
+      } else if (typeof f === "string" && f.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(f);
+          action = parsed.action || f;
+          dueDate = parsed.dueDate || null;
+        } catch { action = f; }
+      } else {
+        action = f;
+      }
+      return {
+        id: `${e.id}-${i}`,
+        entryId: e.id,
+        action,
+        dueDate,
+        surgeon: e.customer_name,
+        hospital: e.organisation,
+        salesperson: e.salesperson,
+        completed: (e.completed_followups||[]).includes(`${e.id}-${i}`),
+      };
+    })
   );
 
   const overdueCount = allFollowups.filter(f => {
