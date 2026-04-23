@@ -4,7 +4,7 @@ import logo from "./logo.png";
 
 const SUPABASE_URL  = process.env.REACT_APP_SUPABASE_URL  || "";
 const SUPABASE_KEY  = process.env.REACT_APP_SUPABASE_ANON_KEY || "";
-const ADMIN_EMAIL   = process.env.REACT_APP_ADMIN_EMAIL || "";
+const ADMIN_EMAILS  = (process.env.REACT_APP_ADMIN_EMAIL || "").split(",").map(e=>e.trim().toLowerCase()).filter(Boolean);
 const supabase      = SUPABASE_URL ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 const KEYWORDS = ["New Business Opportunity","Business at Risk","Follow-up Required","Escalation Needed"];
@@ -792,17 +792,31 @@ function FollowupsTab({ followups, entries, isAdmin, onToggle, onExport }) {
           <div key={f.id} style={{ ...cSt, borderLeft:`4px solid ${s.border}`, opacity:f.completed?0.7:1 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
               <div style={{ flex:1, cursor:"pointer" }} onClick={()=>setSelectedFollowup(f)}>
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                  <span style={{ background:s.bg, border:`1px solid ${s.border}`, color:s.text, borderRadius:4, padding:"2px 8px", fontSize:10, fontWeight:700 }}>{s.label}</span>
-                  {f.dueDate && <span style={{ fontSize:11, color:C.textMuted }}>Due: {f.dueDate}</span>}
+
+                {/* Header: Surgeon | Rep | Due Date */}
+                <div style={{ display:"flex", alignItems:"center", flexWrap:"wrap", gap:6, marginBottom:8 }}>
+                  <span style={{ fontWeight:800, fontSize:14, color:C.navy }}>{f.surgeon||"Unknown"}</span>
+                  {f.hospital && <span style={{ fontSize:12, color:C.textMuted }}>- {f.hospital}</span>}
                 </div>
-                <div style={{ fontSize:14, fontWeight:600, color:f.completed?C.textMuted:C.text, textDecoration:f.completed?"line-through":"none", lineHeight:1.5, marginBottom:6 }}>
+
+                <div style={{ display:"flex", alignItems:"center", flexWrap:"wrap", gap:6, marginBottom:8 }}>
+                  <span style={{ background:s.bg, border:`1px solid ${s.border}`, color:s.text, borderRadius:4, padding:"2px 8px", fontSize:10, fontWeight:700 }}>{s.label}</span>
+                  {f.dueDate && (
+                    <span style={{ fontSize:11, fontWeight:700, color:s.text, background:s.bg, border:`1px solid ${s.border}`, borderRadius:4, padding:"2px 8px" }}>
+                      Due: {f.dueDate}
+                    </span>
+                  )}
+                  {f.salesperson && (
+                    <span style={{ fontSize:11, color:C.textMuted }}>Rep: {f.salesperson}</span>
+                  )}
+                </div>
+
+                {/* Follow-up action */}
+                <div style={{ fontSize:13, color:f.completed?C.textMuted:C.text, textDecoration:f.completed?"line-through":"none", lineHeight:1.55, borderLeft:`3px solid ${s.border}`, paddingLeft:10, marginBottom:6 }}>
                   {f.action}
                 </div>
-                <div style={{ fontSize:11, color:C.textMuted }}>
-                  {f.surgeon}{f.hospital?` - ${f.hospital}`:""}{f.salesperson?` | ${f.salesperson}`:""}
-                </div>
-                <div style={{ fontSize:11, color:C.orange, marginTop:4, fontWeight:600 }}>Tap to view full call entry</div>
+
+                <div style={{ fontSize:11, color:C.orange, fontWeight:600 }}>Tap to view full call</div>
               </div>
               <button
                 onClick={()=>onToggle(f.id, f.entryId)}
@@ -956,7 +970,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [entries, setEntries] = useState([]);
   const [tab, setTab]         = useState("record");
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = ADMIN_EMAILS.includes(user?.email?.toLowerCase());
 
   useEffect(()=>{
     if (!supabase) { setLoading(false); return; }
