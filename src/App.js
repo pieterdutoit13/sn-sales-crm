@@ -49,7 +49,7 @@ function LoginScreen({ onLogin }) {
 
   async function handle() {
     if (!email||!password) { setError("Please enter your email and password."); return; }
-    if (!supabase) { setError("App not configured â€” check environment variables."); return; }
+    if (!supabase) { setError("App not configured - check environment variables."); return; }
     setLoading(true); setError("");
     const { data, error:err } = mode==="login"
       ? await supabase.auth.signInWithPassword({ email, password })
@@ -66,7 +66,7 @@ function LoginScreen({ onLogin }) {
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, marginBottom:28 }}>
           <img src={logo} alt="Smith+Nephew" style={{ height:56, objectFit:"contain" }} />
           <div style={{ width:40, height:3, background:C.orange, borderRadius:2 }} />
-          <div style={{ fontWeight:700, fontSize:16, color:C.navy }}>Sales CRM â€” Netherlands</div>
+          <div style={{ fontWeight:700, fontSize:16, color:C.navy }}>Sales CRM - Netherlands</div>
           <div style={{ fontSize:12, color:C.textMuted }}>{mode==="login"?"Sign in to continue":"Create your account"}</div>
         </div>
 
@@ -82,7 +82,7 @@ function LoginScreen({ onLogin }) {
           </div>
         </div>
       </div>
-      <div style={{ marginTop:20, fontSize:11, color:C.textMuted }}>Smith+Nephew Â· Confidential</div>
+      <div style={{ marginTop:20, fontSize:11, color:C.textMuted }}>Smith+Nephew - Confidential</div>
     </div>
   );
 }
@@ -245,14 +245,15 @@ function RecordTab({ user, onSave }) {
         <div style={{ ...cSt, display:"flex", flexDirection:"column", alignItems:"center", gap:16, padding:28 }}>
           <div style={{ fontSize:13, fontWeight:600, color:C.navy, textAlign:"center" }}>
             {recState==="idle"       && "Tap the button and speak your call notes"}
-            {recState==="recording"  && "Recording â€” tap Stop when finished"}
+            {recState==="recording"  && "Recording - tap Stop when finished"}
             {recState==="processing" && statusMsg}
           </div>
 
           {/* Big record button */}
           {recState==="idle" && (
             <div onClick={startRecording} style={{ width:90, height:90, borderRadius:"50%", background:C.orange, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", cursor:"pointer", boxShadow:"0 6px 24px rgba(244,130,31,0.4)", transition:"all 0.2s", gap:4 }}>
-              <div style={{ fontSize:32 }}>ðŸŽ™</div>
+              <div style={{ fontSize:28, color:C.white }}>&#9679;</div>
+              <div style={{ fontSize:11, color:C.white, fontWeight:800, letterSpacing:2 }}>RECORD</div>
             </div>
           )}
 
@@ -283,7 +284,7 @@ function RecordTab({ user, onSave }) {
         </div>
       )}
 
-      {/* Transcript box â€” shown after recording or for manual entry */}
+      {/* Transcript box - shown after recording or for manual entry */}
       {recState !== "processing" && recState !== "recording" && (
         <div>
           <label style={lSt}>
@@ -308,7 +309,7 @@ function RecordTab({ user, onSave }) {
         <div style={{ ...cSt, border:`2px solid ${C.orange}`, display:"flex", flexDirection:"column", gap:16 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <div style={{ width:10, height:10, borderRadius:"50%", background:C.orange }} />
-            <div style={{ color:C.orange, fontWeight:700, fontSize:12, textTransform:"uppercase", letterSpacing:"0.06em" }}>AI Extracted Data â€” Please Review</div>
+            <div style={{ color:C.orange, fontWeight:700, fontSize:12, textTransform:"uppercase", letterSpacing:"0.06em" }}>AI Extracted Data - Please Review</div>
           </div>
 
           {/* Transcript preview */}
@@ -320,7 +321,7 @@ function RecordTab({ user, onSave }) {
           )}
 
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, borderTop:`1px solid ${C.border}`, paddingTop:14 }}>
-            {[["Date",extracted.date],["Sales Rep",extracted.salesRep],["Surgeon",extracted.surgeonName],["Hospital",extracted.hospital||"â€”"],["Product",extracted.productLine||"â€”"],["Sentiment",extracted.sentiment]].map(([k,v])=>(
+            {[["Date",extracted.date],["Sales Rep",extracted.salesRep],["Surgeon",extracted.surgeonName],["Hospital",extracted.hospital||"-"],["Product",extracted.productLine||"-"],["Sentiment",extracted.sentiment]].map(([k,v])=>(
               <div key={k}><div style={mSt}>{k}</div><div style={{ fontSize:13, fontWeight:600, color:C.text }}>{v}</div></div>
             ))}
           </div>
@@ -331,7 +332,7 @@ function RecordTab({ user, onSave }) {
             <div>
               <div style={mSt}>Key Follow-ups</div>
               {extracted.keyFollowups.map((f,i)=>(
-                <div key={i} style={{ fontSize:13, color:C.text, borderLeft:`3px solid ${C.orange}`, paddingLeft:10, marginBottom:5, lineHeight:1.5 }}>â†’ {f}</div>
+                <div key={i} style={{ fontSize:13, color:C.text, borderLeft:`3px solid ${C.orange}`, paddingLeft:10, marginBottom:5, lineHeight:1.5 }}>>> {f}</div>
               ))}
             </div>
           )}
@@ -395,7 +396,7 @@ function DatabaseTab({ entries, onDelete, isAdmin, onExport }) {
 
       {filtered.length===0 ? (
         <div style={{ textAlign:"center", color:C.textMuted, padding:"48px 0", fontSize:14 }}>
-          {entries.length===0?"No entries yet â€” record your first call!":"No results match your filter."}
+          {entries.length===0?"No entries yet - record your first call!":"No results match your filter."}
         </div>
       ):filtered.map(e=>(
         <div key={e.id} style={{ ...cSt, cursor:"pointer" }} onClick={()=>setExpanded(expanded===e.id?null:e.id)}>
@@ -403,7 +404,7 @@ function DatabaseTab({ entries, onDelete, isAdmin, onExport }) {
             <div>
               <div style={{ fontWeight:700, fontSize:15, color:C.text }}>{e.customer_name}</div>
               <div style={{ fontSize:12, color:C.textMuted, marginTop:2 }}>
-                {e.organisation&&`${e.organisation}  Â·  `}{e.salesperson}  Â·  {e.date}
+                {e.organisation&&`${e.organisation}  -  `}{e.salesperson}  -  {e.date}
               </div>
             </div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:4, alignItems:"flex-start" }}>
@@ -419,7 +420,7 @@ function DatabaseTab({ entries, onDelete, isAdmin, onExport }) {
               {(e.key_followups||[]).length>0 && (
                 <div>
                   <div style={mSt}>Follow-ups</div>
-                  {(e.key_followups||[]).map((f,i)=><div key={i} style={{ fontSize:12, color:C.yellow, borderLeft:`3px solid ${C.yellow}`, paddingLeft:8, marginBottom:4 }}>â†’ {f}</div>)}
+                  {(e.key_followups||[]).map((f,i)=><div key={i} style={{ fontSize:12, color:C.yellow, borderLeft:`3px solid ${C.yellow}`, paddingLeft:8, marginBottom:4 }}>>> {f}</div>)}
                 </div>
               )}
               {e.transcript && (
@@ -445,7 +446,7 @@ function QueryTab({ entries }) {
 
   async function ask() {
     if (!query.trim()) return;
-    if (entries.length===0) { setAnswer("No entries yet â€” log some calls first!"); return; }
+    if (entries.length===0) { setAnswer("No entries yet - log some calls first!"); return; }
     setLoading(true); setAnswer(""); setError("");
     try {
       const res  = await fetch("/api/query", {
@@ -480,7 +481,7 @@ function QueryTab({ entries }) {
       {error && <div style={{ color:C.red, fontSize:13, background:C.redLight, padding:"10px 14px", borderRadius:8 }}>{error}</div>}
 
       <div style={cSt}>
-        <div style={{ fontSize:11, color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.07em", fontWeight:700, marginBottom:10 }}>Example queries â€” tap to use</div>
+        <div style={{ fontSize:11, color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.07em", fontWeight:700, marginBottom:10 }}>Example queries - tap to use</div>
         {suggestions.map(s=>(
           <div key={s} onClick={()=>setQuery(s)} style={{ fontSize:12, color:C.orange, cursor:"pointer", padding:"7px 10px", background:C.orangeLight, borderRadius:6, marginBottom:6, border:`1px solid ${C.orange}33`, fontWeight:500 }}>{s}</div>
         ))}
@@ -676,7 +677,7 @@ export default function App() {
       </div>
 
       <div style={{ textAlign:"center", padding:"24px 0 32px", fontSize:11, color:C.textMuted }}>
-        Smith+Nephew Netherlands Â· Sales CRM Â· Confidential
+        Smith+Nephew Netherlands | Sales CRM | Confidential
       </div>
     </div>
   );
