@@ -304,12 +304,12 @@ function RecordTab({ user, onSave }) {
         </div>
       )}
 
-      {/* Extracted data */}
+      {/* Extracted data - fully editable before saving */}
       {recState==="extracted" && extracted && (
-        <div style={{ ...cSt, border:`2px solid ${C.orange}`, display:"flex", flexDirection:"column", gap:16 }}>
+        <div style={{ ...cSt, border:`2px solid ${C.orange}`, display:"flex", flexDirection:"column", gap:14 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <div style={{ width:10, height:10, borderRadius:"50%", background:C.orange }} />
-            <div style={{ color:C.orange, fontWeight:700, fontSize:12, textTransform:"uppercase", letterSpacing:"0.06em" }}>AI Extracted Data - Please Review</div>
+            <div style={{ color:C.orange, fontWeight:700, fontSize:12, textTransform:"uppercase", letterSpacing:"0.06em" }}>Review and Edit Before Saving</div>
           </div>
 
           {/* Transcript preview */}
@@ -320,33 +320,70 @@ function RecordTab({ user, onSave }) {
             </div>
           )}
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, borderTop:`1px solid ${C.border}`, paddingTop:14 }}>
-            {[["Date",extracted.date],["Sales Rep",extracted.salesRep],["Surgeon",extracted.surgeonName],["Hospital",extracted.hospital||"-"],["Product",extracted.productLine||"-"],["Sentiment",extracted.sentiment]].map(([k,v])=>(
-              <div key={k}><div style={mSt}>{k}</div><div style={{ fontSize:13, fontWeight:600, color:C.text }}>{v}</div></div>
-            ))}
+          {/* Editable fields */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, borderTop:`1px solid ${C.border}`, paddingTop:14 }}>
+            <div>
+              <label style={lSt}>Surgeon Name</label>
+              <input style={{ ...iSt, fontSize:13, padding:"8px 10px" }}
+                value={extracted.surgeonName||""}
+                onChange={e=>setExtracted(x=>({...x, surgeonName:e.target.value}))}/>
+            </div>
+            <div>
+              <label style={lSt}>Hospital</label>
+              <input style={{ ...iSt, fontSize:13, padding:"8px 10px" }}
+                value={extracted.hospital||""}
+                onChange={e=>setExtracted(x=>({...x, hospital:e.target.value}))}/>
+            </div>
+            <div>
+              <label style={lSt}>Date</label>
+              <input style={{ ...iSt, fontSize:13, padding:"8px 10px" }}
+                value={extracted.date||""}
+                onChange={e=>setExtracted(x=>({...x, date:e.target.value}))}/>
+            </div>
+            <div>
+              <label style={lSt}>Product Line</label>
+              <input style={{ ...iSt, fontSize:13, padding:"8px 10px" }}
+                value={extracted.productLine||""}
+                onChange={e=>setExtracted(x=>({...x, productLine:e.target.value}))}/>
+            </div>
+            <div>
+              <label style={lSt}>Sentiment</label>
+              <select style={{ ...iSt, fontSize:13, padding:"8px 10px" }}
+                value={extracted.sentiment||"neutral"}
+                onChange={e=>setExtracted(x=>({...x, sentiment:e.target.value}))}>
+                <option value="positive">Positive</option>
+                <option value="neutral">Neutral</option>
+                <option value="negative">Negative</option>
+              </select>
+            </div>
           </div>
 
-          <div><div style={mSt}>Topic Discussed</div><div style={{ fontSize:13, color:C.text, lineHeight:1.65 }}>{extracted.topicDiscussed}</div></div>
+          <div>
+            <label style={lSt}>Topic Discussed</label>
+            <input style={{ ...iSt, fontSize:13, padding:"8px 10px" }}
+              value={extracted.topicDiscussed||""}
+              onChange={e=>setExtracted(x=>({...x, topicDiscussed:e.target.value}))}/>
+          </div>
 
-          {extracted.keyFollowups?.length>0 && (
-            <div>
-              <div style={mSt}>Key Follow-ups</div>
-              {extracted.keyFollowups.map((f,i)=>(
-                <div key={i} style={{ fontSize:13, color:C.text, borderLeft:`3px solid ${C.orange}`, paddingLeft:10, marginBottom:5, lineHeight:1.5 }}>>> {f}</div>
-              ))}
+          <div>
+            <label style={lSt}>Key Follow-ups (one per line)</label>
+            <textarea style={{ ...iSt, fontSize:13, padding:"8px 10px", minHeight:70, resize:"vertical", lineHeight:1.6 }}
+              value={(extracted.keyFollowups||[]).join("\n")}
+              onChange={e=>setExtracted(x=>({...x, keyFollowups:e.target.value.split("\n")}))}/>
+          </div>
+
+          <div>
+            <label style={lSt}>Flags â€” tap to toggle</label>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+              {KEYWORDS.map(kw=>{
+                const active=(extracted.keywords||[]).includes(kw);
+                const c=KW[kw];
+                return <div key={kw} onClick={()=>setExtracted(x=>({ ...x, keywords: active ? (x.keywords||[]).filter(k=>k!==kw) : [...(x.keywords||[]),kw] }))} style={{ background:active?c.bg:C.bg, border:`1.5px solid ${active?c.border:C.border}`, color:active?c.text:C.textMuted, borderRadius:6, padding:"6px 12px", fontSize:12, fontWeight:600, cursor:"pointer" }}>{kw}</div>;
+              })}
             </div>
-          )}
+          </div>
 
-          {extracted.keywords?.length>0 && (
-            <div>
-              <div style={mSt}>Flags</div>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:4 }}>
-                {extracted.keywords.map(k=><Badge key={k} label={k}/>)}
-              </div>
-            </div>
-          )}
-
-          <div style={{ display:"flex", gap:10 }}>
+          <div style={{ display:"flex", gap:10, paddingTop:4 }}>
             <button onClick={save} style={{ flex:1, background:C.orange, color:C.white, border:"none", borderRadius:8, padding:"13px 0", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:"0 2px 8px rgba(244,130,31,0.3)" }}>
               Save to Database
             </button>
