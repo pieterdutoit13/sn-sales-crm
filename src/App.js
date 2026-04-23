@@ -360,12 +360,109 @@ function RecordTab({ user, onSave }) {
   );
 }
 
+// â”€â”€ EDIT MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function EditModal({ entry, onSave, onClose }) {
+  const [form, setForm] = useState({
+    customer_name:   entry.customer_name || "",
+    organisation:    entry.organisation || "",
+    date:            entry.date || "",
+    salesperson:     entry.salesperson || "",
+    topic_discussed: entry.topic_discussed || "",
+    summary:         entry.summary || "",
+    key_followups:   (entry.key_followups||[]).join("\n"),
+    keywords:        entry.keywords || [],
+    sentiment:       entry.sentiment || "neutral",
+    product_line:    entry.product_line || "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  function toggle(kw) {
+    setForm(f => ({ ...f, keywords: f.keywords.includes(kw) ? f.keywords.filter(k=>k!==kw) : [...f.keywords, kw] }));
+  }
+
+  async function save() {
+    setSaving(true);
+    const updated = {
+      customer_name:   form.customer_name,
+      organisation:    form.organisation,
+      date:            form.date,
+      salesperson:     form.salesperson,
+      topic_discussed: form.topic_discussed,
+      summary:         form.summary,
+      key_followups:   form.key_followups.split("\n").map(s=>s.trim()).filter(Boolean),
+      keywords:        form.keywords,
+      sentiment:       form.sentiment,
+      product_line:    form.product_line,
+    };
+    if (supabase) {
+      const { error } = await supabase.from("entries").update(updated).eq("id", entry.id);
+      if (error) { alert("Save failed: "+error.message); setSaving(false); return; }
+    }
+    onSave({ ...entry, ...updated });
+    setSaving(false);
+    onClose();
+  }
+
+  const fSt = { width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:8, padding:"9px 12px", color:C.text, fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
+
+  return (
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div style={{ background:C.white, borderRadius:16, padding:24, width:"100%", maxWidth:500, maxHeight:"90vh", overflowY:"auto", boxShadow:C.shadowMd }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+          <div style={{ fontWeight:800, fontSize:16, color:C.navy }}>Edit Entry</div>
+          <button onClick={onClose} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 12px", cursor:"pointer", fontSize:13, color:C.textMuted }}>Cancel</button>
+        </div>
+
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <div><label style={lSt}>Surgeon Name</label><input style={fSt} value={form.customer_name} onChange={e=>setForm(f=>({...f,customer_name:e.target.value}))}/></div>
+            <div><label style={lSt}>Hospital</label><input style={fSt} value={form.organisation} onChange={e=>setForm(f=>({...f,organisation:e.target.value}))}/></div>
+            <div><label style={lSt}>Date</label><input style={fSt} value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/></div>
+            <div><label style={lSt}>Sales Rep</label><input style={fSt} value={form.salesperson} onChange={e=>setForm(f=>({...f,salesperson:e.target.value}))}/></div>
+            <div><label style={lSt}>Product Line</label><input style={fSt} value={form.product_line} onChange={e=>setForm(f=>({...f,product_line:e.target.value}))}/></div>
+            <div>
+              <label style={lSt}>Sentiment</label>
+              <select style={fSt} value={form.sentiment} onChange={e=>setForm(f=>({...f,sentiment:e.target.value}))}>
+                <option value="positive">Positive</option>
+                <option value="neutral">Neutral</option>
+                <option value="negative">Negative</option>
+              </select>
+            </div>
+          </div>
+
+          <div><label style={lSt}>Topic Discussed</label><input style={fSt} value={form.topic_discussed} onChange={e=>setForm(f=>({...f,topic_discussed:e.target.value}))}/></div>
+
+          <div><label style={lSt}>Summary</label><textarea style={{ ...fSt, minHeight:80, resize:"vertical", lineHeight:1.6 }} value={form.summary} onChange={e=>setForm(f=>({...f,summary:e.target.value}))}/></div>
+
+          <div><label style={lSt}>Follow-ups (one per line)</label><textarea style={{ ...fSt, minHeight:70, resize:"vertical", lineHeight:1.6 }} value={form.key_followups} onChange={e=>setForm(f=>({...f,key_followups:e.target.value}))}/></div>
+
+          <div>
+            <label style={lSt}>Flags</label>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+              {KEYWORDS.map(kw=>{
+                const active = form.keywords.includes(kw);
+                const c = KW[kw];
+                return <div key={kw} onClick={()=>toggle(kw)} style={{ background:active?c.bg:C.bg, border:`1.5px solid ${active?c.border:C.border}`, color:active?c.text:C.textMuted, borderRadius:6, padding:"6px 12px", fontSize:12, fontWeight:600, cursor:"pointer" }}>{kw}</div>;
+              })}
+            </div>
+          </div>
+
+          <button onClick={save} disabled={saving} style={bOrange(saving)}>
+            {saving?"Saving...":"Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // â”€â”€ DATABASE TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function DatabaseTab({ entries, onDelete, isAdmin, onExport }) {
+function DatabaseTab({ entries, onDelete, onEdit, isAdmin, onExport }) {
   const [filter, setFilter]       = useState("");
   const [kwFilter, setKwFilter]   = useState("");
   const [repFilter, setRepFilter] = useState("");
   const [expanded, setExpanded]   = useState(null);
+  const [editEntry, setEditEntry] = useState(null);
   const reps = [...new Set(entries.map(e=>e.salesperson).filter(Boolean))];
   const fSt  = { background:C.white, border:`1.5px solid ${C.border}`, borderRadius:8, padding:"9px 12px", color:C.text, fontSize:12, outline:"none", fontFamily:"inherit" };
 
@@ -379,6 +476,8 @@ function DatabaseTab({ entries, onDelete, isAdmin, onExport }) {
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+      {editEntry && <EditModal entry={editEntry} onSave={onEdit} onClose={()=>setEditEntry(null)}/>}
+
       <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
         <input style={{ ...fSt, flex:1, minWidth:120 }} placeholder="Search surgeon, hospital..." value={filter} onChange={e=>setFilter(e.target.value)}/>
         <select style={{ ...fSt, minWidth:110 }} value={kwFilter} onChange={e=>setKwFilter(e.target.value)}>
@@ -409,6 +508,7 @@ function DatabaseTab({ entries, onDelete, isAdmin, onExport }) {
             </div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:4, alignItems:"flex-start" }}>
               {(e.keywords||[]).map(k=><Badge key={k} label={k}/>)}
+              <button onClick={ev=>{ev.stopPropagation();setEditEntry(e);}} style={{ background:C.navyLight, border:`1px solid ${C.navy}`, color:C.navy, borderRadius:4, padding:"3px 9px", fontSize:11, cursor:"pointer", fontWeight:700 }}>Edit</button>
               {isAdmin&&<button onClick={ev=>{ev.stopPropagation();onDelete(e.id);}} style={{ background:C.redLight, border:`1px solid ${C.red}`, color:C.red, borderRadius:4, padding:"3px 9px", fontSize:11, cursor:"pointer", fontWeight:700 }}>Delete</button>}
             </div>
           </div>
@@ -421,6 +521,12 @@ function DatabaseTab({ entries, onDelete, isAdmin, onExport }) {
                 <div>
                   <div style={mSt}>Follow-ups</div>
                   {(e.key_followups||[]).map((f,i)=><div key={i} style={{ fontSize:12, color:C.yellow, borderLeft:`3px solid ${C.yellow}`, paddingLeft:8, marginBottom:4 }}>>> {f}</div>)}
+                </div>
+              )}
+              {e.product_line && (
+                <div>
+                  <div style={mSt}>Product Line</div>
+                  <div style={{ fontSize:12, color:C.text }}>{e.product_line}</div>
                 </div>
               )}
               {e.transcript && (
@@ -608,6 +714,10 @@ export default function App() {
     setTab("database");
   }
 
+  function handleEdit(updated) {
+    setEntries(prev => prev.map(e => e.id === updated.id ? { ...e, ...updated } : e));
+  }
+
   function exportCSV() {
     const headers=["Date","Salesperson","Surgeon","Hospital","Product","Topic","Follow-ups","Flags","Sentiment","Summary"];
     const rows=entries.map(e=>[e.date,e.salesperson,e.customer_name,e.organisation,e.product_line||"",e.topic_discussed,(e.key_followups||[]).join("; "),(e.keywords||[]).join("; "),e.sentiment,e.summary].map(v=>`"${String(v||"").replace(/"/g,'""')}"`));
@@ -671,7 +781,7 @@ export default function App() {
       {/* Content */}
       <div style={{ maxWidth:640, margin:"0 auto", padding:20 }}>
         {tab==="record"  &&<RecordTab user={user} onSave={handleSave}/>}
-        {tab==="database"&&<DatabaseTab entries={entries} onDelete={deleteEntry} isAdmin={isAdmin} onExport={exportCSV}/>}
+        {tab==="database"&&<DatabaseTab entries={entries} onDelete={deleteEntry} onEdit={handleEdit} isAdmin={isAdmin} onExport={exportCSV}/>}
         {tab==="query"   &&<QueryTab entries={entries}/>}
         {tab==="manager"&&isAdmin&&<ManagerDashboard entries={entries}/>}
       </div>
