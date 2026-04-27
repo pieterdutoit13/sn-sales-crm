@@ -173,7 +173,7 @@ function RecordTab({ user, onSave }) {
       const eRes = await fetch("/api/extract", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ transcript:text, repName, date:new Date().toLocaleDateString("en-GB") })
+        body: JSON.stringify({ transcript:text, repName, date:new Date().toLocaleDateString("en-GB", {timeZone:"Europe/Amsterdam"}) })
       });
       const eData = await eRes.json();
       if (!eRes.ok || eData.error) throw new Error(eData.error || "Extraction failed");
@@ -199,7 +199,7 @@ function RecordTab({ user, onSave }) {
     const entry = {
       user_id:         user.id,
       salesperson:     extracted.salesRep || repName,
-      date:            extracted.date || new Date().toLocaleDateString("en-GB"),
+      date:            extracted.date || new Date().toLocaleDateString("en-GB", {timeZone:"Europe/Amsterdam"}),
       customer_name:   extracted.surgeonName || "Unknown",
       organisation:    extracted.hospital || "",
       topic_discussed: extracted.topicDiscussed || "",
@@ -234,7 +234,7 @@ function RecordTab({ user, onSave }) {
           <div style={{ fontSize:11, color:C.textMuted }}>{user?.email}</div>
         </div>
         <div style={{ marginLeft:"auto", fontSize:11, color:C.textMuted, fontWeight:500 }}>
-          {new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}
+          {new Date().toLocaleDateString("en-GB",{timeZone:"Europe/Amsterdam",weekday:"short",day:"numeric",month:"short"})}
         </div>
       </div>
 
@@ -698,7 +698,7 @@ function FollowupsTab({ followups, entries, isAdmin, onToggle, onExport }) {
     if (f.completed) return "completed";
     if (!f.dueDate) return "upcoming";
     const [d,m,y] = f.dueDate.split("/");
-    const due = new Date(`${y}-${m}-${d}`);
+    const due = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
     const today = new Date();
     today.setHours(0,0,0,0);
     const diff = Math.ceil((due - today) / (1000*60*60*24));
@@ -1084,7 +1084,7 @@ export default function App() {
         if (dueDate) {
           const parts = dueDate.split("/");
           if (parts.length===3) {
-            const due = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+            const due = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
             const today = new Date(); today.setHours(0,0,0,0);
             const diff = Math.ceil((due-today)/(1000*60*60*24));
             if (diff < 0) status = "Overdue";
