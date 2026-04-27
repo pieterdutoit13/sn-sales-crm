@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 
   // Calculate today and helper dates for AI context
   const today = new Date();
-  const todayStr = today.toLocaleDateString("en-GB");
+  const todayStr = today.toLocaleDateString("en-GB", {timeZone:"Europe/Amsterdam"});
 
   const prompt = `You are a medical device sales CRM extractor for Smith+Nephew Netherlands.
 
